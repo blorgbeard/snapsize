@@ -16,7 +16,8 @@ namespace Snapsize
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new ConfigForm());
+            var form = new MainForm();
+            Application.Run(form);
         }
     }
 }
