@@ -38,21 +38,22 @@ namespace Snapsize
         }
 
         private readonly GlobalHooks _hooks;
+        private readonly OverlayForm _overlay;
 
         public ConfigForm()
         {
             InitializeComponent();
             _hooks = new GlobalHooks(this.Handle);
             _hooks.CallWndProc.CallWndProc += Hooked_WndProc;
-            
+            _overlay = new OverlayForm();
         }
 
         private void Hooked_WndProc(IntPtr windowHandle, IntPtr message, IntPtr wParam, IntPtr lParam)
         {
             if (message == WinApi.WM_MOVE)
             {
-                int x = (short)((uint)lParam & 0xFFFF);
-                int y = (short)(((uint)lParam & 0xFFFF0000) >> 16);
+                int x = (short)((UInt64)lParam & 0xFFFF);
+                int y = (short)(((UInt64)lParam & 0xFFFF0000) >> 16);
                 Log("WM_MOVE          {0}: ({1}, {2})", GetWindowName(windowHandle), x, y);
             } 
             else if (message == WinApi.WM_MOVING)
@@ -62,11 +63,12 @@ namespace Snapsize
             else if (message == WinApi.WM_ENTERSIZEMOVE)
             {
                 Log("WM_ENTERSIZEMOVE {0}", GetWindowName(windowHandle));
+                _overlay.Show();
             }
             else if (message == WinApi.WM_EXITSIZEMOVE)
             {
                 Log("WM_EXITSIZEMOVE  {0}", GetWindowName(windowHandle));
-
+                _overlay.Hide();
                 WinApi.SetWindowPos(
                     windowHandle, IntPtr.Zero, 
                     0, 0, 500, 700, 
