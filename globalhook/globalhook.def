@@ -1,0 +1,6 @@
+LIBRARY globalhook
+
+EXPORTS
+	GetNumber
+	InitializeCallWndProcHook
+	UninitializeCallWndProcHook
