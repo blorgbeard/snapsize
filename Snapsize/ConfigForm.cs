@@ -47,13 +47,31 @@ namespace Snapsize
             
         }
 
-        private void Hooked_WndProc(IntPtr Handle, IntPtr Message, IntPtr wParam, IntPtr lParam)
+        private void Hooked_WndProc(IntPtr windowHandle, IntPtr message, IntPtr wParam, IntPtr lParam)
         {
-            if (Message == (IntPtr)WinApi.WM_MOVE)
+            if (message == WinApi.WM_MOVE)
             {
                 int x = (short)((uint)lParam & 0xFFFF);
                 int y = (short)(((uint)lParam & 0xFFFF0000) >> 16);
-                Log("{0}: ({1}, {2})", GetWindowName(Handle), x, y);
+                Log("WM_MOVE          {0}: ({1}, {2})", GetWindowName(windowHandle), x, y);
+            } 
+            else if (message == WinApi.WM_MOVING)
+            {
+                Log("WM_MOVING        {0}", GetWindowName(windowHandle));
+            }
+            else if (message == WinApi.WM_ENTERSIZEMOVE)
+            {
+                Log("WM_ENTERSIZEMOVE {0}", GetWindowName(windowHandle));
+            }
+            else if (message == WinApi.WM_EXITSIZEMOVE)
+            {
+                Log("WM_EXITSIZEMOVE  {0}", GetWindowName(windowHandle));
+
+                WinApi.SetWindowPos(
+                    windowHandle, IntPtr.Zero, 
+                    0, 0, 500, 700, 
+                    WinApi.SetWindowPosFlags.AsynchronousWindowPosition | 
+                    WinApi.SetWindowPosFlags.IgnoreZOrder);
             }
         }
 
