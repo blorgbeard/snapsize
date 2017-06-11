@@ -19,7 +19,18 @@ namespace Snapsize
 
         private void OverlayForm_Paint(object sender, PaintEventArgs e)
         {
-            e.Graphics.FillRectangle(Brushes.Blue, 0, 0, ClientRectangle.Width / 2, ClientRectangle.Height);
+            e.Graphics.DrawString(
+                string.Format("({0}, {1}) -> ({2}, {3})", this.Left, this.Top, this.Right, this.Bottom),
+                this.Font, Brushes.Blue, 20, 20);
+
+            e.Graphics.DrawString(
+                string.Format("{0} x {1}", this.Width, this.Height),
+                this.Font, Brushes.Blue, 20, 120);
+        }
+
+        private void OverlayForm_Resize(object sender, EventArgs e)
+        {
+            Invalidate();
         }
     }
 }

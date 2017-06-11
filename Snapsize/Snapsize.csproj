@@ -92,6 +92,8 @@
     <Compile Include="ConfigForm.Designer.cs">
       <DependentUpon>ConfigForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="GlobalHook\GlobalKeyboardHook.cs" />
+    <Compile Include="GlobalHook\GlobalKeyboardHookEventArgs.cs" />
     <Compile Include="GlobalHook\GlobalHook.cs" />
     <Compile Include="GlobalHook\GlobalHookApi.cs" />
     <Compile Include="GlobalHook\Hook.cs" />

@@ -35,6 +35,8 @@
             this.clearLogButton = new System.Windows.Forms.Button();
             this.startButton = new System.Windows.Forms.Button();
             this.stopButton = new System.Windows.Forms.Button();
+            this.button1 = new System.Windows.Forms.Button();
+            this.lblCoords = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // trayIcon
@@ -89,11 +91,33 @@
             this.stopButton.UseVisualStyleBackColor = true;
             this.stopButton.Click += new System.EventHandler(this.stopButton_Click);
             // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(255, 12);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(75, 23);
+            this.button1.TabIndex = 2;
+            this.button1.Text = "button1";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
+            // 
+            // lblCoords
+            // 
+            this.lblCoords.AutoSize = true;
+            this.lblCoords.Location = new System.Drawing.Point(336, 17);
+            this.lblCoords.Name = "lblCoords";
+            this.lblCoords.Size = new System.Drawing.Size(35, 13);
+            this.lblCoords.TabIndex = 3;
+            this.lblCoords.Text = "label1";
+            this.lblCoords.Resize += new System.EventHandler(this.lblCoords_Resize);
+            // 
             // ConfigForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(602, 352);
+            this.Controls.Add(this.lblCoords);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.stopButton);
             this.Controls.Add(this.startButton);
             this.Controls.Add(this.clearLogButton);
@@ -102,6 +126,7 @@
             this.Text = "Form1";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.ConfigForm_FormClosed);
             this.Shown += new System.EventHandler(this.ConfigForm_Shown);
+            this.Resize += new System.EventHandler(this.ConfigForm_Resize);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -114,6 +139,8 @@
         private System.Windows.Forms.Button clearLogButton;
         private System.Windows.Forms.Button startButton;
         private System.Windows.Forms.Button stopButton;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Label lblCoords;
     }
 }
 
