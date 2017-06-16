@@ -57,48 +57,45 @@ namespace Snapsize
         
         private IntPtr _window;
         private bool _inSizeMove = false;
+        private bool _checkedMovingNotSizing = false;
+        private bool _movingNotSizing = false;
         private bool _snapMode = false;
-
-        private void _keyHook_KeyboardPressed(object sender, GlobalKeyboardHookEventArgs e)
-        {
-            Keys vk = (Keys)e.KeyboardData.VirtualCode;
-            Log("{0} {1}", e.KeyboardState, vk);
-
-            if  (vk == Keys.Shift || vk == Keys.ShiftKey || vk == Keys.LShiftKey || vk == Keys.RShiftKey)
-            {
-                _snapMode = e.KeyboardState == GlobalKeyboardHook.KeyboardState.KeyDown;
-            }
-
-            ShowUpdateOverlay();
-        }
+        private Size _initialSize;
 
         private void Hooked_WndProc(IntPtr window, IntPtr message, IntPtr wParam, IntPtr lParam)
         {
             if (_inSizeMove && window != _window)
                 return;
-
+            
             if (message == WinApi.WM_ENTERSIZEMOVE)
             {
                 _inSizeMove = true;
                 _window = window;
+                _initialSize = WinApi.GetWindowBounds(window).Size;
+                Log("initial size: {0}", _initialSize);
                 Log("WM_ENTERSIZEMOVE {0}", GetWindowName(window));                
             }
-            else if (message == WinApi.WM_MOVE)
+            else if (_inSizeMove && message == WinApi.WM_MOVE)
             {
+                //if (!_checkedMovingNotSizing)
+                {
+                    var newSize = WinApi.GetWindowBounds(window).Size;
+                    Log("new size: {0}", newSize);
+                    _movingNotSizing = newSize == _initialSize;
+                    _checkedMovingNotSizing = true;
+                }
                 int x = (short)((UInt64)lParam & 0xFFFF);
                 int y = (short)(((UInt64)lParam & 0xFFFF0000) >> 16);                    
-                Log("WM_MOVE          {0}: ({1}, {2})", GetWindowName(window), x, y);
-
-                ShowUpdateOverlay();
+                Log("WM_MOVE          {0}: ({1}, {2})", GetWindowName(window), x, y);                
             }
-            else if(message == WinApi.WM_EXITSIZEMOVE)
+            else if(_inSizeMove && message == WinApi.WM_EXITSIZEMOVE)
             {
                 _window = IntPtr.Zero;
                 _inSizeMove = false;
 
                 Log("WM_EXITSIZEMOVE  {0}", GetWindowName(window));
                 
-                if (_snapMode)
+                if (_snapMode && _checkedMovingNotSizing && _movingNotSizing)
                 {
 
                     var area = _areas.GetClosestSnapAreaPixels(Cursor.Position);
@@ -121,9 +118,22 @@ namespace Snapsize
             ShowUpdateOverlay();
         }
 
+        private void _keyHook_KeyboardPressed(object sender, GlobalKeyboardHookEventArgs e)
+        {
+            Keys vk = (Keys)e.KeyboardData.VirtualCode;
+            Log("{0} {1}", e.KeyboardState, vk);
+
+            if (vk == Keys.Shift || vk == Keys.ShiftKey || vk == Keys.LShiftKey || vk == Keys.RShiftKey)
+            {
+                _snapMode = e.KeyboardState == GlobalKeyboardHook.KeyboardState.KeyDown;
+            }
+
+            ShowUpdateOverlay();
+        }
+
         private void ShowUpdateOverlay()
         {
-            if (_snapMode && _inSizeMove)
+            if (_snapMode && _inSizeMove && _movingNotSizing)
             {
                 var area = _areas.GetClosestSnapAreaPixels(Cursor.Position);
                 _overlay.SetDesktopBounds(area.X, area.Y, area.Width, area.Height);
