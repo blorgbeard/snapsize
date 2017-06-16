@@ -40,12 +40,12 @@ namespace Snapsize
         public SnapAreas()
         {
             _snapAreasPixels = (
-                from percent in _snapAreasPercentage
-                select new Rectangle(
-                    Screen.PrimaryScreen.WorkingArea.Width * percent.X / 100,
-                    Screen.PrimaryScreen.WorkingArea.Height * percent.Y / 100,
-                    Screen.PrimaryScreen.WorkingArea.Width * percent.Width / 100,
-                    Screen.PrimaryScreen.WorkingArea.Height * percent.Height / 100)
+                from rectPercent in _snapAreasPercentage
+                let leftPx = Screen.PrimaryScreen.WorkingArea.Width * rectPercent.Left / 100
+                let topPx = Screen.PrimaryScreen.WorkingArea.Height * rectPercent.Top / 100
+                let rightPx = Screen.PrimaryScreen.WorkingArea.Width * rectPercent.Right / 100
+                let bottomPx = Screen.PrimaryScreen.WorkingArea.Height * rectPercent.Bottom / 100
+                select new Rectangle(leftPx, topPx, rightPx - leftPx, bottomPx - topPx)
                 ).ToList();
         }
 
