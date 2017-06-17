@@ -85,6 +85,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Area.cs" />
+    <Compile Include="Fraction.cs" />
     <Compile Include="GlobalHook\CallWndProcHook.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>

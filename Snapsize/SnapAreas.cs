@@ -6,33 +6,40 @@ using System.Windows.Forms;
 
 namespace Snapsize
 {
+
     class SnapAreas
     {
+        private static readonly Fraction Half = new Fraction(1, 2);
+        private static readonly Fraction OneThird = new Fraction(1, 3);
+        private static readonly Fraction TwoThirds = new Fraction(2, 3);
+        private static readonly Fraction OneQuarter = new Fraction(1, 4);
+        private static readonly Fraction ThreeQuarters = new Fraction(3, 4);
+
         // todo: allow customization of these
-        private readonly List<Rectangle> _snapAreasPercentage = new List<Rectangle>()
+        private readonly List<Area> _snapAreaFractions = new List<Area>()
         {
             // horizontal halves
-            new Rectangle(0,0,50,100),
-            new Rectangle(50,0,50,100),
-
+            new Area(0, 0, Half, 1),
+            new Area(Half, 0, 1, 1),
+            
             // horizontal thirds
-            new Rectangle(0,0,33,100),
-            new Rectangle(33,0,34,100),
-            new Rectangle(67,0,33,100),
+            new Area(0, 0, OneThird, 1),
+            new Area(OneThird, 0, TwoThirds, 1),
+            new Area(TwoThirds, 0, 1, 1),
 
             // horizontal 1/3 + 2/3
-            new Rectangle(0,0,33,100),
-            new Rectangle(33,0,67,100),
+            new Area(0, 0, OneThird, 1),
+            new Area(OneThird, 0, 1, 1),
             
             // horizontal 2/3 + 1/3
-            new Rectangle(0,0,67,100),
-            new Rectangle(67,0,33,100),
+            new Area(0, 0, TwoThirds, 1),
+            new Area(TwoThirds, 0, 1, 1),
             
             // quandrants
-            new Rectangle(0,0,50,50),
-            new Rectangle(50,0,50,50),
-            new Rectangle(0,50,50,50),
-            new Rectangle(50,50,50,50),
+            new Area(0, 0, Half, Half),
+            new Area(Half, 0, 1, Half),
+            new Area(0, Half, Half, 1),
+            new Area(Half, Half, 1, 1),
         };
 
         private readonly List<Rectangle> _snapAreasPixels;
@@ -40,11 +47,11 @@ namespace Snapsize
         public SnapAreas()
         {
             _snapAreasPixels = (
-                from rectPercent in _snapAreasPercentage
-                let leftPx = Screen.PrimaryScreen.WorkingArea.Width * rectPercent.Left / 100
-                let topPx = Screen.PrimaryScreen.WorkingArea.Height * rectPercent.Top / 100
-                let rightPx = Screen.PrimaryScreen.WorkingArea.Width * rectPercent.Right / 100
-                let bottomPx = Screen.PrimaryScreen.WorkingArea.Height * rectPercent.Bottom / 100
+                from area in _snapAreaFractions
+                let leftPx = area.Left.Of(Screen.PrimaryScreen.WorkingArea.Width)
+                let topPx = area.Top.Of(Screen.PrimaryScreen.WorkingArea.Height)
+                let rightPx = area.Right.Of(Screen.PrimaryScreen.WorkingArea.Width)
+                let bottomPx = area.Bottom.Of(Screen.PrimaryScreen.WorkingArea.Height)
                 select new Rectangle(leftPx, topPx, rightPx - leftPx, bottomPx - topPx)
                 ).ToList();
         }
