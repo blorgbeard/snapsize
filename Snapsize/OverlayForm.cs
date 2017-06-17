@@ -17,6 +17,18 @@ namespace Snapsize
             InitializeComponent();
         }
 
+        public const int WS_EX_NOACTIVATE = 0x08000000;
+
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                var parameters = base.CreateParams;
+                parameters.ExStyle |= WS_EX_NOACTIVATE;
+                return parameters;
+            }
+        }
+
         private void OverlayForm_Paint(object sender, PaintEventArgs e)
         {
             e.Graphics.DrawString(
