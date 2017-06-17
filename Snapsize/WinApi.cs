@@ -7,6 +7,7 @@ namespace Snapsize
     static class WinApi
     {
         public static readonly IntPtr WM_MOVE = (IntPtr)0x0003;
+        public static readonly IntPtr WM_SIZE = (IntPtr)0x0005;
         public static readonly IntPtr WM_ENTERSIZEMOVE = (IntPtr)0x0231;
         public static readonly IntPtr WM_EXITSIZEMOVE = (IntPtr)0x0232;
 

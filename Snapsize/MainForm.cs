@@ -64,45 +64,62 @@ namespace Snapsize
         }
         
         private IntPtr _window;
-        private bool _inSizeMove = false;
+        private bool _windowMoving = false;
         private bool _checkedMovingNotSizing = false;
-        private bool _movingNotSizing = false;
         private bool _snapMode = false;
         private Size _initialSize;
 
         private void Hooked_WndProc(IntPtr window, IntPtr message, IntPtr wParam, IntPtr lParam)
         {
-            if (_inSizeMove && window != _window)
+            if (_windowMoving && window != _window)
                 return;
             
-            if (!_inSizeMove && message == WinApi.WM_ENTERSIZEMOVE)
+            if (!_windowMoving && message == WinApi.WM_ENTERSIZEMOVE)
             {
-                Log("WM_ENTERSIZEMOVE {0}", GetWindowName(window)); //Log("inSizeMove = {0}", _inSizeMove);
+                Log("WM_ENTERSIZEMOVE {0}", GetWindowName(window));
                 _initialSize = WinApi.GetWindowBounds(window).Size;
-                //Log("initial size:    {0}", _initialSize);
-                _inSizeMove = true;
+                Log("Initial size:    {0}", _initialSize);
+                _windowMoving = true;
+                _checkedMovingNotSizing = false;
                 _window = window;
-                ShowUpdateOverlay();
             }
-            else if (_inSizeMove && message == WinApi.WM_MOVE)
+            else if (_windowMoving && message == WinApi.WM_MOVE)
             {
-                //if (!_checkedMovingNotSizing)
+                Log("WM_MOVE          {0}", GetWindowName(window));
+                // when sizing from the topleft handle, we get a WM_MOVE and *then* a WM_SIZE.
+                // so we have to check here that we aren't sizing before we show the overlay window.
+                if (!_checkedMovingNotSizing)
                 {
-                //    var newSize = WinApi.GetWindowBounds(window).Size;
-                //    Log("new size: {0}", newSize);
-                //    _movingNotSizing = newSize == _initialSize;
-                //    _checkedMovingNotSizing = true;
+                    var newSize = WinApi.GetWindowBounds(window).Size;
+                    Log("New size:        {0}", newSize);
+                    if (newSize != _initialSize)
+                    {
+                        Log("Sizing detected! ABORT!");
+                        _windowMoving = false;
+                        _window = IntPtr.Zero;
+                        //ShowUpdateOverlay();
+                        return;
+                    }
+                    _checkedMovingNotSizing = true;
                 }
-                int x = (short)((UInt64)lParam & 0xFFFF);
-                int y = (short)(((UInt64)lParam & 0xFFFF0000) >> 16);
-                //Log("WM_MOVE          {0}: ({1}, {2})", GetWindowName(window), x, y);
                 ShowUpdateOverlay();
             }
-            else if(_inSizeMove && message == WinApi.WM_EXITSIZEMOVE)
+            else if (_windowMoving && message == WinApi.WM_SIZE)
+            {
+                // if we're resizing from any handle except topleft, we don't get a WM_MOVE,
+                // just a WM_SIZE. So we can abort when we get one.
+                Log("WM_SIZE          {0}", GetWindowName(window));
+                Log("Sizing detected! ABORT!");
+                _windowMoving = false;
+                _window = IntPtr.Zero;
+                //ShowUpdateOverlay();    // ensure overlay is hidden
+                return;
+            }
+            else if (_windowMoving && message == WinApi.WM_EXITSIZEMOVE)
             {
                 Log("WM_EXITSIZEMOVE  {0}", GetWindowName(window));
 
-                if (_snapMode)// && _checkedMovingNotSizing && _movingNotSizing)
+                if (_snapMode)
                 {
 
                     var area = _areas.GetClosestSnapAreaPixels(Cursor.Position);
@@ -120,7 +137,7 @@ namespace Snapsize
                 }
 
                 _window = IntPtr.Zero;
-                _inSizeMove = false; Log("inSizeMove = {0}", _inSizeMove);
+                _windowMoving = false; Log("inSizeMove = {0}", _windowMoving);
 
                 ShowUpdateOverlay();
             }           
@@ -144,12 +161,13 @@ namespace Snapsize
 
         private void ShowUpdateOverlay()
         {
-            if (_snapMode && _inSizeMove)// && _movingNotSizing)
+            if (_snapMode && _windowMoving && _checkedMovingNotSizing)
             {
                 var area = _areas.GetClosestSnapAreaPixels(Cursor.Position);
                 if (!_overlay.Visible)
                 {
                     Log("Showing overlay");
+                    // show before moving, or the movement doesn't apply
                     _overlay.Show();
                 }
                 if (area != _overlay.DesktopBounds)
