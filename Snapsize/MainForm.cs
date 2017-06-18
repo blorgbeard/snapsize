@@ -13,6 +13,13 @@ namespace Snapsize
         private readonly GlobalKeyboardHook _keyHook;
         private readonly OverlayForm _overlay;
         private readonly SnapAreas _areas = new SnapAreas();
+        private AboutForm _aboutForm;
+        private IntPtr _window;
+        private bool _windowMoving = false;
+        private bool _checkedMovingNotSizing = false;
+        private bool _snapMode = false;
+        private Size _initialSize;
+
 
         protected override void SetVisibleCore(bool value)
         {
@@ -63,12 +70,7 @@ namespace Snapsize
 
         }
         
-        private IntPtr _window;
-        private bool _windowMoving = false;
-        private bool _checkedMovingNotSizing = false;
-        private bool _snapMode = false;
-        private Size _initialSize;
-
+ 
         private void Hooked_WndProc(IntPtr window, IntPtr message, IntPtr wParam, IntPtr lParam)
         {
             if (_windowMoving && window != _window)
@@ -129,10 +131,10 @@ namespace Snapsize
 
                     WinApi.MoveWindow(
                         _window,
-                        area.X,
-                        area.Y,
-                        area.Width,
-                        area.Height,
+                        realArea.X,
+                        realArea.Y,
+                        realArea.Width,
+                        realArea.Height,
                         true);
                 }
 
@@ -219,7 +221,29 @@ namespace Snapsize
         {
             var result = (args.Length > 0) ? string.Format(text, args) : text;
             Debug.WriteLine(result);
-        }        
+        }
+
+        private void exitMenuItem_Click(object sender, EventArgs e)
+        {
+            Application.Exit();
+        }
+
+        private void aboutMenuItem_Click(object sender, EventArgs e)
+        {
+            if (_aboutForm == null || _aboutForm.IsDisposed)
+            {
+                _aboutForm = new AboutForm();
+            }            
+
+            if (_aboutForm.Visible)
+            {
+                _aboutForm.BringToFront();
+            }
+            else
+            {
+                _aboutForm.ShowDialog();
+            }
+        }
 
 #else
         private void Log(string text, params object[] args)
