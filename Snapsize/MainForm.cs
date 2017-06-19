@@ -8,7 +8,7 @@ using System.Windows.Forms;
 namespace Snapsize
 {
     public partial class MainForm : Form
-    {                
+    {
         private readonly GlobalHooks _hooks;
         private readonly GlobalKeyboardHook _keyHook;
         private readonly OverlayForm _overlay;
@@ -20,7 +20,6 @@ namespace Snapsize
         private bool _snapMode = false;
         private Size _initialSize;
 
-
         protected override void SetVisibleCore(bool value)
         {
             // this is only a form so that we have a handle for GlobalHooks.
@@ -28,9 +27,35 @@ namespace Snapsize
             base.SetVisibleCore(false);
         }
 
-        public MainForm()
+        public enum Mode
+        {
+            GlobalHooksOnly,
+            FullApplication
+        }
+
+        public static MainForm CreateForFullApplication()
+        {
+            return new MainForm(Mode.FullApplication);
+        }
+
+        public static MainForm CreateForGlobalHookRelayOnly(IntPtr destinationWindow)
+        {
+            return new MainForm(Mode.GlobalHooksOnly, destinationWindow);
+        }
+
+        private MainForm(Mode mode, IntPtr? destinationWindow = null)
         {
             InitializeComponent();
+
+            if (mode == Mode.GlobalHooksOnly)
+            {
+                Debug.Assert(destinationWindow != null);
+                _hooks = new GlobalHooks(destinationWindow.Value);
+                _hooks.CallWndProc.Start();
+                return;
+            }
+
+            Debug.Assert(destinationWindow == null);
 
             _hooks = new GlobalHooks(this.Handle);
             _hooks.CallWndProc.CallWndProc += Hooked_WndProc;
@@ -38,11 +63,35 @@ namespace Snapsize
 
             _keyHook = new GlobalKeyboardHook();
             _keyHook.KeyboardPressed += _keyHook_KeyboardPressed;
-            
             _overlay = new OverlayForm();
-            
+
+            trayIcon.Visible = true;
         }
-        
+
+
+#if DEBUG
+        [DllImport("user32.dll")]
+        private static extern int GetWindowText(IntPtr hWnd, StringBuilder title, int size);
+
+        private string GetWindowName(IntPtr Hwnd)
+        {
+            // This function gets the name of a window from its handle
+            StringBuilder Title = new StringBuilder(256);
+            GetWindowText(Hwnd, Title, 256);
+
+            return Title.ToString().Trim();
+        }
+
+        private void Log(string text, params object[] args)
+        {
+            var result = (args.Length > 0) ? string.Format(text, args) : text;
+            Debug.WriteLine(result);
+        }
+#else
+        private void Log(string text, params object[] args) { }
+        private string GetWindowName(IntPtr hWnd) => null;
+#endif
+
         /// <summary>
         /// Given a rectangle into which we want to put (the visible part of) a window, calculate the
         /// rectangle that we need to pass to MoveWindow to make that happen.
@@ -67,19 +116,18 @@ namespace Snapsize
                 area.Top - invisibleBorderSizeTop,
                 area.Width + invisibleBorderSizeLeft + invisibleBorderSizeRight,
                 area.Height + invisibleBorderSizeTop + invisibleBorderSizeBottom);
-
         }
-        
- 
+
+
         private void Hooked_WndProc(IntPtr window, IntPtr message, IntPtr wParam, IntPtr lParam)
         {
             if (_windowMoving && window != _window)
                 return;
-            
+
             if (!_windowMoving && message == WinApi.WM_ENTERSIZEMOVE)
             {
-                Log("WM_ENTERSIZEMOVE {0}", GetWindowName(window));
                 _initialSize = WinApi.GetWindowBounds(window).Size;
+                Log("WM_ENTERSIZEMOVE {0}", GetWindowName(window));
                 Log("Initial size:    {0}", _initialSize);
                 _windowMoving = true;
                 _checkedMovingNotSizing = false;
@@ -88,6 +136,7 @@ namespace Snapsize
             else if (_windowMoving && message == WinApi.WM_MOVE)
             {
                 Log("WM_MOVE          {0}", GetWindowName(window));
+
                 // when sizing from the topleft handle, we get a WM_MOVE and *then* a WM_SIZE.
                 // so we have to check here that we aren't sizing before we show the overlay window.
                 if (!_checkedMovingNotSizing)
@@ -99,7 +148,6 @@ namespace Snapsize
                         Log("Sizing detected! ABORT!");
                         _windowMoving = false;
                         _window = IntPtr.Zero;
-                        //ShowUpdateOverlay();
                         return;
                     }
                     _checkedMovingNotSizing = true;
@@ -114,7 +162,6 @@ namespace Snapsize
                 Log("Sizing detected! ABORT!");
                 _windowMoving = false;
                 _window = IntPtr.Zero;
-                //ShowUpdateOverlay();    // ensure overlay is hidden
                 return;
             }
             else if (_windowMoving && message == WinApi.WM_EXITSIZEMOVE)
@@ -139,22 +186,22 @@ namespace Snapsize
                 }
 
                 _window = IntPtr.Zero;
-                _windowMoving = false; Log("inSizeMove = {0}", _windowMoving);
+                _windowMoving = false;
 
                 ShowUpdateOverlay();
-            }           
+            }
         }
 
         private void _keyHook_KeyboardPressed(object sender, GlobalKeyboardHookEventArgs e)
         {
             Keys vk = (Keys)e.KeyboardData.VirtualCode;
-                        
+
             if (vk == Keys.Shift || vk == Keys.ShiftKey || vk == Keys.LShiftKey || vk == Keys.RShiftKey)
             {
                 var shouldBeInSnapMode = e.KeyboardState == GlobalKeyboardHook.KeyboardState.KeyDown;
                 if (shouldBeInSnapMode != _snapMode)
                 {
-                    _snapMode = shouldBeInSnapMode; 
+                    _snapMode = shouldBeInSnapMode;
                     Log("Set snapmode to {0}", _snapMode);
                     ShowUpdateOverlay();
                 }
@@ -198,34 +245,26 @@ namespace Snapsize
 
         private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
         {
-            _hooks.CallWndProc.Stop();
-            _hooks.Dispose();
-            _keyHook.Dispose();
+            Log("Closing application");
+            CleanUpForShutdown();
         }
 
-#if DEBUG
-
-        [DllImport("user32.dll")]
-        private static extern int GetWindowText(IntPtr hWnd, StringBuilder title, int size);
-
-        private string GetWindowName(IntPtr Hwnd)
+        public void CleanUpForShutdown()
         {
-            // This function gets the name of a window from its handle
-            StringBuilder Title = new StringBuilder(256);
-            GetWindowText(Hwnd, Title, 256);
-
-            return Title.ToString().Trim();
-        }
-
-        private void Log(string text, params object[] args)
-        {
-            var result = (args.Length > 0) ? string.Format(text, args) : text;
-            Debug.WriteLine(result);
+            if (_hooks != null)
+            {
+                _hooks.CallWndProc.Stop();
+                _hooks.Dispose();
+            }
+            if (_keyHook != null)
+            {
+                _keyHook.Dispose();
+            }
         }
 
         private void exitMenuItem_Click(object sender, EventArgs e)
         {
-            Application.Exit();
+            Close();
         }
 
         private void aboutMenuItem_Click(object sender, EventArgs e)
@@ -233,7 +272,7 @@ namespace Snapsize
             if (_aboutForm == null || _aboutForm.IsDisposed)
             {
                 _aboutForm = new AboutForm();
-            }            
+            }
 
             if (_aboutForm.Visible)
             {
@@ -244,12 +283,5 @@ namespace Snapsize
                 _aboutForm.ShowDialog();
             }
         }
-
-#else
-        private void Log(string text, params object[] args)
-        {}
-#endif
-
-
     }
 }

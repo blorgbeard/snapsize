@@ -8,11 +8,18 @@ using System.Threading.Tasks;
 namespace Snapsize
 {
     static class GlobalHookApi
-    {        
-        [DllImport("globalhook.dll", CallingConvention = CallingConvention.Cdecl)]
+    {
+
+#if WIN64
+        private const string NativeDllName = "globalhook64.dll";
+#else
+        private const string NativeDllName = "globalhook.dll";
+#endif
+
+        [DllImport(NativeDllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool InitializeCallWndProcHook(int threadID, IntPtr hWndDestination);
 
-        [DllImport("globalhook.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(NativeDllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void UninitializeCallWndProcHook();
     }
 }

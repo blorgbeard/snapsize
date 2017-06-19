@@ -1,5 +1,3 @@
-LIBRARY globalhook
-
 EXPORTS
 	GetNumber
 	InitializeCallWndProcHook
