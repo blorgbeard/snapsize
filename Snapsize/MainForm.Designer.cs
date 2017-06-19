@@ -34,6 +34,7 @@
             this.trayIconMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.aboutMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exitMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.configurationMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.trayIconMenu.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -49,23 +50,31 @@
             // 
             this.trayIconMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.aboutMenuItem,
+            this.configurationMenuItem,
             this.exitMenuItem});
             this.trayIconMenu.Name = "trayIconMenu";
-            this.trayIconMenu.Size = new System.Drawing.Size(114, 48);
+            this.trayIconMenu.Size = new System.Drawing.Size(155, 92);
             // 
             // aboutMenuItem
             // 
             this.aboutMenuItem.Name = "aboutMenuItem";
-            this.aboutMenuItem.Size = new System.Drawing.Size(113, 22);
+            this.aboutMenuItem.Size = new System.Drawing.Size(154, 22);
             this.aboutMenuItem.Text = "&About..";
             this.aboutMenuItem.Click += new System.EventHandler(this.aboutMenuItem_Click);
             // 
             // exitMenuItem
             // 
             this.exitMenuItem.Name = "exitMenuItem";
-            this.exitMenuItem.Size = new System.Drawing.Size(113, 22);
+            this.exitMenuItem.Size = new System.Drawing.Size(154, 22);
             this.exitMenuItem.Text = "E&xit";
             this.exitMenuItem.Click += new System.EventHandler(this.exitMenuItem_Click);
+            // 
+            // configurationMenuItem
+            // 
+            this.configurationMenuItem.Name = "configurationMenuItem";
+            this.configurationMenuItem.Size = new System.Drawing.Size(154, 22);
+            this.configurationMenuItem.Text = "&Configuration..";
+            this.configurationMenuItem.Click += new System.EventHandler(this.configurationMenuItem_Click);
             // 
             // MainForm
             // 
@@ -85,6 +94,7 @@
         private System.Windows.Forms.ContextMenuStrip trayIconMenu;
         private System.Windows.Forms.ToolStripMenuItem exitMenuItem;
         private System.Windows.Forms.ToolStripMenuItem aboutMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem configurationMenuItem;
     }
 }
 

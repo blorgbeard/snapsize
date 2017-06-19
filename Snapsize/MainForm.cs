@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Windows.Forms;
 
@@ -12,8 +14,10 @@ namespace Snapsize
         private readonly GlobalHooks _hooks;
         private readonly GlobalKeyboardHook _keyHook;
         private readonly OverlayForm _overlay;
-        private readonly SnapAreas _areas = new SnapAreas();
+        private string _serializedAreas = null;
+        private SnapAreas _areas = null;
         private AboutForm _aboutForm;
+        private ConfigForm _configForm;
         private IntPtr _window;
         private bool _windowMoving = false;
         private bool _checkedMovingNotSizing = false;
@@ -57,6 +61,26 @@ namespace Snapsize
 
             Debug.Assert(destinationWindow == null);
 
+            try
+            {
+                _serializedAreas = LoadAreasFromDisk();
+                _areas = SnapAreas.Deserialize(_serializedAreas);
+            }
+            catch (Exception ex) when (
+                (ex is FileNotFoundException) ||
+                (ex is DirectoryNotFoundException))
+            {
+                _serializedAreas = DefaultSnapAreas.Value;
+                _areas = SnapAreas.Deserialize(_serializedAreas);
+            }
+            catch (SerializationException)
+            {
+                MessageBox.Show("Your settings couldn't be parsed. Loading defaults.", 
+                    Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                _serializedAreas = DefaultSnapAreas.Value;
+                _areas = SnapAreas.Deserialize(_serializedAreas);
+            }
+
             _hooks = new GlobalHooks(this.Handle);
             _hooks.CallWndProc.CallWndProc += Hooked_WndProc;
             _hooks.CallWndProc.Start();
@@ -68,6 +92,18 @@ namespace Snapsize
             trayIcon.Visible = true;
         }
 
+        private static string LoadAreasFromDisk()
+        {
+            return File.ReadAllText(GetConfigurationFilename());
+        }
+
+        private static string GetConfigurationFilename()
+        {
+            return Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                Application.ProductName,
+                "snapareas.cfg");
+        }
 
 #if DEBUG
         [DllImport("user32.dll")]
@@ -281,6 +317,44 @@ namespace Snapsize
             else
             {
                 _aboutForm.ShowDialog();
+            }
+        }
+
+        private void configurationMenuItem_Click(object sender, EventArgs e)
+        {
+            if (_configForm == null || _configForm.IsDisposed)
+            {
+                _configForm = new ConfigForm();
+            }
+
+            if (_configForm.Visible)
+            {
+                _configForm.BringToFront();
+            }
+            else
+            {
+                _configForm.Areas = _serializedAreas;
+                if (_configForm.ShowDialog() != DialogResult.OK)
+                {
+                    return;
+                }
+
+                try
+                {
+                    _areas = SnapAreas.Deserialize(_configForm.Areas);
+                    _serializedAreas = _configForm.Areas;
+
+                    string filename = GetConfigurationFilename();
+                    Directory.CreateDirectory(Path.GetDirectoryName(filename));
+                    File.WriteAllText(filename, _serializedAreas);
+                }
+                catch (SerializationException)
+                {
+                    MessageBox.Show("Not a valid format for configuration! Reverted.",
+                        Application.ProductName,
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                }
             }
         }
     }

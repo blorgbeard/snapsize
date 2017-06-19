@@ -1,4 +1,8 @@
-﻿namespace Snapsize
+﻿using System;
+using System.Linq;
+using System.Runtime.Serialization;
+
+namespace Snapsize
 {
     struct Fraction
     {
@@ -20,7 +24,31 @@
         {
             return value * Numerator / Denominator;
         }
+        
+        public string Serialize()
+        {
+            if (Denominator == 1)
+            {
+                return Numerator.ToString();
+            }
+            return string.Format("{0}/{1}", Numerator, Denominator);
+        }
 
-        // todo: normalize function
+        public static Fraction Deserialize(string input)
+        {
+            var parts = input.Split('/').Select(t => t.Trim()).ToArray();
+                ;
+            if (parts.Length < 1 || parts.Length > 2) throw new SerializationException("Invalid fraction format");
+            if (!int.TryParse(parts[0], out int numerator)) throw new SerializationException("Invalid fraction format");
+            if (parts.Length == 1)
+            {
+                return new Fraction(numerator, 1);
+            }
+            else
+            {
+                if (!int.TryParse(parts[1], out int denominator)) throw new SerializationException("Invalid fraction format");
+                return new Fraction(numerator, denominator);
+            }
+        }
     }
 }
